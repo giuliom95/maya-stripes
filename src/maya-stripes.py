@@ -89,14 +89,26 @@ class stripeNode(OpenMaya.MPxNode):
         if(pPlug == stripeNode.surfaceOutAttr):
             outSurfaceDataHandle = pDataBlock.outputValue(stripeNode.surfaceOutAttr)
 
-            #curveDataHandle = pDataBlock.inputValue(stripeNode.startCurveAttr)
-            #curve = OpenMaya.MFnNurbsCurve(curveDataHandle.asNurbsCurve())
+            startCurveDataHandle = pDataBlock.inputValue(stripeNode.startCurveAttr)
+            endCurveDataHandle = pDataBlock.inputValue(stripeNode.endCurveAttr)
+            startCurve = OpenMaya.MFnNurbsCurve(startCurveDataHandle.asNurbsCurve())
+            endCurve = OpenMaya.MFnNurbsCurve(endCurveDataHandle.asNurbsCurve())
+
+            attrs = [
+                stripeNode.startCurveStartAttr,
+                stripeNode.startCurveEndAttr,
+                stripeNode.endCurveStartAttr,
+                stripeNode.endCurveEndAttr]
+
+            handles = [pDataBlock.inputValue(x) for x in attrs]
+            params = [h.asFloat() for h in handles]
+
+            cvs = [startCurve.getPointAtParam(p, OpenMaya.MSpace.kWorld) for p in params[0:2]] + \
+                [endCurve.getPointAtParam(p, OpenMaya.MSpace.kWorld) for p in params[2:4]]
 
             dataCreator = OpenMaya.MFnNurbsSurfaceData()
             outData = dataCreator.create()
-
             outSurfaceFn = OpenMaya.MFnNurbsSurface()
-            cvs = [[-4, 0, 1], [-4, 0, -1], [4, 1, 0], [4, -1, 0]]
             outSurface = outSurfaceFn.create(cvs, [0, 1], [0, 1], 1, 1, outSurfaceFn.kOpen, outSurfaceFn.kOpen, False, parent=outData)
 
             outSurfaceDataHandle.setMObject(outData)
