@@ -24,6 +24,10 @@ class stripeNode(OpenMaya.MPxNode):
     startCurveEndAttr = OpenMaya.MObject()
     endCurveStartAttr = OpenMaya.MObject()
     endCurveEndAttr = OpenMaya.MObject()
+
+    bboxMinAttr = OpenMaya.MObject()
+    bboxMaxAttr = OpenMaya.MObject()
+    bboxMatrixAttr = OpenMaya.MObject()
     nailsAttr = OpenMaya.MObject()
 
     surfaceOutAttr = OpenMaya.MObject()
@@ -37,6 +41,7 @@ class stripeNode(OpenMaya.MPxNode):
         numericAttrFn = OpenMaya.MFnNumericAttribute()
         typedAttrFn = OpenMaya.MFnTypedAttribute()
         compoundAttrFn = OpenMaya.MFnCompoundAttribute()
+        matrixAttrFn = OpenMaya.MFnMatrixAttribute()
 
         #==================================
         # INPUT NODE ATTRIBUTE(S)
@@ -64,16 +69,18 @@ class stripeNode(OpenMaya.MPxNode):
         stripeNode.addAttribute(stripeNode.endCurveStartAttr)
         stripeNode.addAttribute(stripeNode.endCurveEndAttr)
 
-        minAttr = numericAttrFn.createPoint('bboxMin', 'bmi')
-        maxAttr = numericAttrFn.createPoint('bboxMax', 'bma')
+        stripeNode.bboxMinAttr = numericAttrFn.createPoint('bboxMin', 'bmi')
+        stripeNode.bboxMaxAttr = numericAttrFn.createPoint('bboxMax', 'bma')
+        stripeNode.bboxMatrixAttr = matrixAttrFn.create('worldMatrix', 'wm', OpenMaya.MFnMatrixAttribute.kFloat)
         stripeNode.nailsAttr = compoundAttrFn.create('nails', 'n')
         compoundAttrFn.readable = False
         compoundAttrFn.writable = True
         compoundAttrFn.storable = False
         compoundAttrFn.hidden = False
         compoundAttrFn.array = True
-        compoundAttrFn.addChild(minAttr)
-        compoundAttrFn.addChild(maxAttr)
+        compoundAttrFn.addChild(stripeNode.bboxMinAttr)
+        compoundAttrFn.addChild(stripeNode.bboxMaxAttr)
+        compoundAttrFn.addChild(stripeNode.bboxMatrixAttr)
         stripeNode.addAttribute(stripeNode.nailsAttr)
 
         #==================================
@@ -95,6 +102,7 @@ class stripeNode(OpenMaya.MPxNode):
         stripeNode.attributeAffects(stripeNode.startCurveEndAttr, stripeNode.surfaceOutAttr)
         stripeNode.attributeAffects(stripeNode.endCurveStartAttr, stripeNode.surfaceOutAttr)
         stripeNode.attributeAffects(stripeNode.endCurveEndAttr, stripeNode.surfaceOutAttr)
+        stripeNode.attributeAffects(stripeNode.nailsAttr, stripeNode.surfaceOutAttr)
 
     def __init__(self):
         OpenMaya.MPxNode.__init__(self)
@@ -105,6 +113,7 @@ class stripeNode(OpenMaya.MPxNode):
 
             startCurveDataHandle = pDataBlock.inputValue(stripeNode.startCurveAttr)
             endCurveDataHandle = pDataBlock.inputValue(stripeNode.endCurveAttr)
+
             startCurve = OpenMaya.MFnNurbsCurve(startCurveDataHandle.asNurbsCurve())
             endCurve = OpenMaya.MFnNurbsCurve(endCurveDataHandle.asNurbsCurve())
 
@@ -117,13 +126,34 @@ class stripeNode(OpenMaya.MPxNode):
             handles = [pDataBlock.inputValue(x) for x in attrs]
             params = [h.asFloat() for h in handles]
 
-            cvs = [startCurve.getPointAtParam(p, OpenMaya.MSpace.kWorld) for p in params[0:2]] + \
-                [endCurve.getPointAtParam(p, OpenMaya.MSpace.kWorld) for p in params[2:4]]
+            points = [startCurve.getPointAtParam(p, OpenMaya.MSpace.kWorld) for p in params[0:2]]
+            knotsU = [0]
+
+            nailsArrayDataHandle = pDataBlock.inputArrayValue(stripeNode.nailsAttr)
+            while not nailsArrayDataHandle.isDone():
+                nailDataHandle = nailsArrayDataHandle.inputValue()
+
+                matrix = nailDataHandle.child(stripeNode.bboxMatrixAttr).asFloatMatrix()
+                minVector = nailDataHandle.child(stripeNode.bboxMinAttr).asFloatVector()
+                maxVector = nailDataHandle.child(stripeNode.bboxMaxAttr).asFloatVector()
+
+                minP = OpenMaya.MFloatPoint(minVector)*matrix
+                maxP = OpenMaya.MFloatPoint(maxVector)*matrix
+
+                xz = [.5*(minP.x + maxP.x), .5*(minP.z + maxP.z)]
+                points += [[xz[0], minP.y, xz[1]]]
+                points += [[xz[0], maxP.y, xz[1]]]
+                knotsU += [knotsU[-1] + 1]
+
+                nailsArrayDataHandle.next()
+
+            points += [endCurve.getPointAtParam(p, OpenMaya.MSpace.kWorld) for p in params[2:4]]
+            knotsU += [knotsU[-1] + 1]
 
             dataCreator = OpenMaya.MFnNurbsSurfaceData()
             outData = dataCreator.create()
             outSurfaceFn = OpenMaya.MFnNurbsSurface()
-            outSurface = outSurfaceFn.create(cvs, [0, 1], [0, 1], 1, 1, outSurfaceFn.kOpen, outSurfaceFn.kOpen, False, parent=outData)
+            outSurface = outSurfaceFn.create(points, knotsU, [0, 1], 1, 1, outSurfaceFn.kOpen, outSurfaceFn.kOpen, False, parent=outData)
 
             outSurfaceDataHandle.setMObject(outData)
             pDataBlock.setClean(pPlug)
