@@ -24,6 +24,7 @@ class stripeNode(OpenMaya.MPxNode):
     startCurveEndAttr = OpenMaya.MObject()
     endCurveStartAttr = OpenMaya.MObject()
     endCurveEndAttr = OpenMaya.MObject()
+    nailsAttr = OpenMaya.MObject()
 
     surfaceOutAttr = OpenMaya.MObject()
 
@@ -35,6 +36,7 @@ class stripeNode(OpenMaya.MPxNode):
     def initializer():
         numericAttrFn = OpenMaya.MFnNumericAttribute()
         typedAttrFn = OpenMaya.MFnTypedAttribute()
+        compoundAttrFn = OpenMaya.MFnCompoundAttribute()
 
         #==================================
         # INPUT NODE ATTRIBUTE(S)
@@ -61,6 +63,18 @@ class stripeNode(OpenMaya.MPxNode):
         stripeNode.addAttribute(stripeNode.startCurveEndAttr)
         stripeNode.addAttribute(stripeNode.endCurveStartAttr)
         stripeNode.addAttribute(stripeNode.endCurveEndAttr)
+
+        minAttr = numericAttrFn.createPoint('bboxMin', 'bmi')
+        maxAttr = numericAttrFn.createPoint('bboxMax', 'bma')
+        stripeNode.nailsAttr = compoundAttrFn.create('nails', 'n')
+        compoundAttrFn.readable = False
+        compoundAttrFn.writable = True
+        compoundAttrFn.storable = False
+        compoundAttrFn.hidden = False
+        compoundAttrFn.array = True
+        compoundAttrFn.addChild(minAttr)
+        compoundAttrFn.addChild(maxAttr)
+        stripeNode.addAttribute(stripeNode.nailsAttr)
 
         #==================================
         # OUTPUT NODE ATTRIBUTE(S)
