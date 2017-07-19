@@ -174,7 +174,51 @@ class DoSripesCommand(OpenMaya.MPxCommand):
         return DoSripesCommand()
 
     def doIt(self, args):
-        pass
+        root = pmc.ls(sl=True)[0]
+
+        curvesTrans = [c for c in root.getChildren() if c.getShapes() != []]
+        startCurve, endCurve = [c.getShape() for c in curvesTrans]
+
+        nailsRoot = [c for c in root.getChildren() if c.getShapes() == []][0]
+        nailRows = nailsRoot.getChildren()
+
+        if len(nailRows) == 0:
+            raise RuntimeError('No nail rows')
+
+        stripesNumber = len(nailRows[0].getChildren())
+        if stripesNumber == 0:
+            raise RuntimeError('No nails in first row')
+
+        surfaces = []
+
+        scKnotDomain = startCurve.getKnotDomain()
+        ecKnotDomain = endCurve.getKnotDomain()
+        scDelta = (scKnotDomain[1] - scKnotDomain[0]) / stripesNumber
+        ecDelta = (ecKnotDomain[1] - ecKnotDomain[0]) / stripesNumber
+
+        for i in range(stripesNumber):
+            stripeNode = pmc.createNode('stripe')
+            pmc.connectAttr(startCurve.attr('worldSpace[-1]'), stripeNode.attr('startCurve'))
+            pmc.connectAttr(endCurve.attr('worldSpace[-1]'), stripeNode.attr('endCurve'))
+
+            for j,row in enumerate(nailRows):
+                nail = row.childAtIndex(i).getShape()
+                pmc.connectAttr(nail.attr('boundingBox.boundingBoxMin'), stripeNode.attr('nails[{0}].bboxMin'.format(j)))
+                pmc.connectAttr(nail.attr('boundingBox.boundingBoxMax'), stripeNode.attr('nails[{0}].bboxMax'.format(j)))
+                pmc.connectAttr(nail.attr('worldMatrix[-1]'), stripeNode.attr('nails[{0}].worldMatrix'.format(j)))
+
+            stripeNode.setAttr('startCurveStartParam', scDelta*i)
+            stripeNode.setAttr('startCurveEndParam', scDelta*(i+1))
+            stripeNode.setAttr('endCurveStartParam', ecDelta*i)
+            stripeNode.setAttr('endCurveEndParam', ecDelta*(i+1))
+
+            transformNode = pmc.createNode('transform', p=root)
+            surfaceNode = pmc.createNode('nurbsSurface', p=transformNode)
+            pmc.connectAttr(stripeNode.attr('surface'), surfaceNode.attr('create'))
+            surfaces += [transformNode]
+
+        pmc.select(surfaces)
+        pmc.hyperShade(assign='lambert1')
 
 
 ##########################################################
