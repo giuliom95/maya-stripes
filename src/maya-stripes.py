@@ -3,6 +3,7 @@
 import sys
 
 import maya.api.OpenMaya as OpenMaya
+import pymel.core as pmc
 
 
 def maya_useNewAPI():
@@ -162,6 +163,20 @@ class stripeNode(OpenMaya.MPxNode):
             return OpenMaya.kUnknownParameter
 
 
+class DoSripesCommand(OpenMaya.MPxCommand):
+    commandName = 'doStripes'
+
+    def __init__(self):
+        OpenMaya.MPxCommand.__init__(self)
+
+    @staticmethod
+    def commandCreator():
+        return DoSripesCommand()
+
+    def doIt(self, args):
+        pass
+
+
 ##########################################################
 # Plug-in initialization.
 ##########################################################
@@ -180,6 +195,16 @@ def initializePlugin(mobject):
         sys.stderr.write('Failed to register node: ' + stripeNode.nodeName)
         raise
 
+    try:
+        mplugin.registerCommand(
+            DoSripesCommand.commandName,
+            DoSripesCommand.commandCreator
+        )
+    except:
+        sys.stderr.write(
+            'Failed to register command: ' + DoSripesCommand.commandName)
+        raise
+
 
 def uninitializePlugin(mobject):
     ''' Uninitializes the plug-in '''
@@ -188,4 +213,10 @@ def uninitializePlugin(mobject):
         mplugin.deregisterNode(stripeNode.nodeId)
     except:
         sys.stderr.write('Failed to deregister node: ' + stripeNode.nodeName)
+        raise
+
+    try:
+        mplugin.deregisterCommand(DoSripesCommand.commandName)
+    except:
+        sys.stderr.write('Failed to unregister command: ' + DoSripesCommand.commandName)
         raise
