@@ -212,12 +212,13 @@ class DoSripesCommand(OpenMaya.MPxCommand):
             stripeNode.setAttr('endCurveStartParam', ecDelta*i)
             stripeNode.setAttr('endCurveEndParam', ecDelta*(i+1))
 
-            transformNode = pmc.createNode('transform', p=root)
+            transformNode = pmc.createNode('transform', p=root, n='stripe{0}'.format(i))
             surfaceNode = pmc.createNode('nurbsSurface', p=transformNode)
             pmc.connectAttr(stripeNode.attr('surface'), surfaceNode.attr('create'))
             surfaces += [transformNode]
 
         pmc.select(surfaces)
+        pmc.group(n='stripes')
         pmc.hyperShade(assign='lambert1')
 
 
