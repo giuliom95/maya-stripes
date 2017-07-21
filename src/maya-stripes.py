@@ -174,30 +174,39 @@ class DoSripesCommand(OpenMaya.MPxCommand):
         return DoSripesCommand()
 
     def doIt(self, args):
-        root = pmc.ls(sl=True)[0]
+        try:
+            root = pmc.ls(sl=True)[0]
+        except:
+            raise RuntimeError('Plese select a hierarchy')
 
         curvesTrans = [c for c in root.getChildren() if c.getShapes() != []]
-        startCurve, endCurve = [c.getShape() for c in curvesTrans]
+        try:
+            startCurve, endCurve = [c.getShape() for c in curvesTrans]
+        except:
+            raise RuntimeError('There must be exactly two curves in the hierarchy')
 
         nailsRoot = [c for c in root.getChildren() if c.getShapes() == []][0]
         nailRows = nailsRoot.getChildren()
 
         if len(nailRows) == 0:
-            raise RuntimeError('No nail rows')
+            raise RuntimeError('There must be at least one nail row')
 
-        stripesNumber = len(nailRows[0].getChildren())
-        if stripesNumber == 0:
-            raise RuntimeError('No nails in first row')
+        stripesNumbers = [len(r.getChildren()) for r in nailRows]
+        stripesNum = stripesNumbers[0]
+        if stripesNum == 0:
+            raise RuntimeError('There must be at least one nail per stripe')
+        if not all([s == stripesNum for s in stripesNumbers]):
+            raise RuntimeError('Evey nail row must have the same number of nails')
 
         surfaces = []
 
         scKnotDomain = startCurve.getKnotDomain()
         ecKnotDomain = endCurve.getKnotDomain()
-        scDelta = (scKnotDomain[1] - scKnotDomain[0]) / stripesNumber
-        ecDelta = (ecKnotDomain[1] - ecKnotDomain[0]) / stripesNumber
+        scDelta = (scKnotDomain[1] - scKnotDomain[0]) / stripesNum
+        ecDelta = (ecKnotDomain[1] - ecKnotDomain[0]) / stripesNum
 
-        for i in range(stripesNumber):
-            stripeNode = pmc.createNode('stripe')
+        for i in range(stripesNum):
+            stripeNode = pmc.createNode('stripe', n='stripeCreator')
             pmc.connectAttr(startCurve.attr('worldSpace[-1]'), stripeNode.attr('startCurve'))
             pmc.connectAttr(endCurve.attr('worldSpace[-1]'), stripeNode.attr('endCurve'))
 
@@ -212,9 +221,12 @@ class DoSripesCommand(OpenMaya.MPxCommand):
             stripeNode.setAttr('endCurveStartParam', ecDelta*i)
             stripeNode.setAttr('endCurveEndParam', ecDelta*(i+1))
 
-            transformNode = pmc.createNode('transform', p=root, n='stripe{0}'.format(i))
+            transformNode = pmc.createNode('transform', p=root, n='stripe1')
             surfaceNode = pmc.createNode('nurbsSurface', p=transformNode)
+
+            # This line throws a warning
             pmc.connectAttr(stripeNode.attr('surface'), surfaceNode.attr('create'))
+
             surfaces += [transformNode]
 
         pmc.select(surfaces)
