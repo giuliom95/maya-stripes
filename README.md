@@ -7,6 +7,7 @@ A Maya plugin to generate stripes that emulate the
 3. Load the scene `/docs/examples/scenes/barebone.mb`
 4. Select the `root_GRP` group from the **Outliner**
 5. Launch the `doStripes` MEL command.  
+
 Examine the hierarchy of the `root_GRP` group of `/docs/examples/scenes/barebone.mb` to be able to use the plugin in your own scenes.
 ## Images
 These images have been rendered by non-commercial Pixar Renderman 21
