@@ -12,4 +12,5 @@ Examine the hierarchy of the `root_GRP` group of `/docs/examples/scenes/barebone
 ## Images
 These images have been rendered by non-commercial Pixar Renderman 21
 ![Green](./docs/examples/images/green.png)  
+![White](./docs/examples/images/white.jpg)  
 ![Orange front](./docs/examples/images/orange.png)  
