@@ -9,6 +9,11 @@ A Maya plugin to generate stripes that emulate the
 5. Launch the `doStripes` MEL command.  
 
 Examine the hierarchy of the `root_GRP` group of `/docs/examples/scenes/barebone.mb` to be able to use the plugin in your own scenes.
+
+## Videos
+* [On my twitter](https://twitter.com/giuliom_95/status/888699985696620544)
+* [On my July 2017 reel](https://vimeo.com/giuliom95/reeljul2017#t=39s)
+
 ## Images
 These images have been rendered by non-commercial Pixar Renderman 21
 ![Green](./docs/examples/images/green.png)  
