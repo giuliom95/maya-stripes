@@ -1,4 +1,6 @@
 # Maya stripes
+## PROJECT MOVED TO GITLAB - [https://gitlab.com/giuliom95/maya-stripes](https://gitlab.com/giuliom95/maya-stripes)
+
 A Maya plugin to generate stripes that emulate the 
 [works of Alberto Biasi](https://www.google.com/search?q=alberto+biasi&tbm=isch).
 ## Quick start
